@@ -1,7 +1,7 @@
 #pragma region includes
 
-#include "generated/test_config.h"
-#include "generated/test_init.h"
+#include "generated/halo3_cache_release_config.h"
+#include "generated/halo3_cache_release_init.h"
 
 #include <rex/rex_app.h>
 
