@@ -42,13 +42,9 @@ PPC_STUB(roundevenf);
 #pragma region game_stubs
 
 PPC_STUB(rex_hs_runtime_update); // bad switch in `c_havok_component::build_physics_model_component`
-
-#pragma endregion
-
-#pragma region game_externs
-
-PPC_EXTERN_IMPORT(__imp__rex_cache_files_copy_fonts);
-PPC_EXTERN_IMPORT(__imp__rex_c_window_manager_handle_global_controller_event);
+PPC_STUB(rex_saved_film_directory_delete_contents)
+PPC_STUB(rex_autosave_queue_save_current_game_variant_to_queue)
+PPC_STUB_RETURN(rex_chud_text_widget_compute_geometry, false)
 
 #pragma endregion
 
@@ -176,34 +172,3 @@ void midasm_hook__c_main_menu_screen_widget_post_initialize(PPCRegister& r11, PP
 }
 
 #pragma endregion
-
-/*
-rex_c_platform_source_datum_queue_sound
-
-	default:
-+		goto loc_822E18C8;
--		__builtin_trap(); // Switch case out of range
-*/
-
-bool cache_files_copy_fonts(void)
-{
-	bool result = rex::GuestToHostFunction<bool>(__imp__rex_cache_files_copy_fonts);
-	return result; // skip over dirty disk
-}
-PPC_HOOK(rex_cache_files_copy_fonts, cache_files_copy_fonts);
-
-void saved_film_directory_delete_contents(void)
-{
-}
-PPC_HOOK(rex_saved_film_directory_delete_contents, saved_film_directory_delete_contents)
-
-void autosave_queue_save_current_game_variant_to_queue(void)
-{
-}
-PPC_HOOK(rex_autosave_queue_save_current_game_variant_to_queue, autosave_queue_save_current_game_variant_to_queue)
-
-bool chud_text_widget_compute_geometry(struct s_chud_draw_widget_data*, struct s_widget_geometry*, struct s_chud_render_data*)
-{
-	return false;
-}
-PPC_HOOK(rex_chud_text_widget_compute_geometry, chud_text_widget_compute_geometry)
