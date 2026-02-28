@@ -25,119 +25,58 @@ public:
 			 PPC_IMAGE_SIZE, PPCFuncMappings }));
 	}
 
-private:
-	enum class InitializationStage
-	{
-		PreSetup,
-		PostSetup
-	};
-
-	void SetupXexImageToLoad(InitializationStage state);
-	void SetupCacheAndXStorage(InitializationStage state);
-
 protected:
-	virtual void OnPreSetup(rex::RuntimeConfig& config) override;
+	virtual void OnLoadXexImage(std::string& xex_image) override;
 	virtual void OnPostSetup() override;
 };
 
 REX_DEFINE_APP(halo3_cache_release, Halo3CacheReleaseApp::Create)
 
-void Halo3CacheReleaseApp::OnPreSetup(rex::RuntimeConfig& config)
+void Halo3CacheReleaseApp::OnLoadXexImage(std::string& xex_image)
 {
-	SetupXexImageToLoad(InitializationStage::PreSetup);
+	xex_image = "game:\\halo3_cache_release.xex";
 }
 
 void Halo3CacheReleaseApp::OnPostSetup()
 {
-	SetupXexImageToLoad(InitializationStage::PostSetup);
-	SetupCacheAndXStorage(InitializationStage::PostSetup);
-}
-
-void Halo3CacheReleaseApp::SetupXexImageToLoad(InitializationStage state)
-{
-#if 0 // This could be a whole lot simpler that what I'm doing here
-	// Load XEX image
-	auto status = _runtime->LoadXexImage("game:\\halo3_cache_release.xex");
-	if (XFAILED(status))
-	{
-		REXLOG_ERROR("Failed to load XEX: {:08X}", status);
-		return;
-	}
-#endif
-
-	rex::Runtime* _runtime = rex::ReXApp::ReXApp::runtime();
-
-	auto default_xex = _runtime->game_data_root() / "default.xex";
-	auto game_xex = _runtime->game_data_root() / "halo3_cache_release.xex";
-
-	switch (state)
-	{
-	case InitializationStage::PreSetup:
-		if (std::filesystem::exists(default_xex))
-		{
-			std::filesystem::remove(default_xex);
-		}
-		std::filesystem::copy_file(game_xex, default_xex);
-		break;
-	case InitializationStage::PostSetup:
-		std::filesystem::remove(default_xex);
-		break;
-	default:
-		break;
-	}
-}
-
-void Halo3CacheReleaseApp::SetupCacheAndXStorage(InitializationStage state)
-{
 	rex::Runtime* _runtime = rex::ReXApp::ReXApp::runtime();
 	rex::filesystem::VirtualFileSystem* fs = _runtime->file_system();
 
-	switch (state)
+	auto cache_device = std::make_unique<rex::filesystem::HostPathDevice>(
+		"\\CACHE", _runtime->game_data_root(), false);
+	if (!cache_device->Initialize())
 	{
-	case InitializationStage::PreSetup:
-		break;
-	case InitializationStage::PostSetup:
+		REXFS_ERROR("Unable to scan cache path");
+	}
+	else
 	{
-		auto cache_device = std::make_unique<rex::filesystem::HostPathDevice>(
-			"\\CACHE", _runtime->game_data_root(), false);
-		if (!cache_device->Initialize())
+		if (!fs->RegisterDevice(std::move(cache_device)))
 		{
-			REXFS_ERROR("Unable to scan cache path");
+			REXFS_ERROR("Unable to register cache path");
 		}
 		else
 		{
-			if (!fs->RegisterDevice(std::move(cache_device)))
-			{
-				REXFS_ERROR("Unable to register cache path");
-			}
-			else
-			{
-				fs->RegisterSymbolicLink("cache:", "\\CACHE");
-			}
-		}
-
-		auto xstorage_device = std::make_unique<rex::filesystem::HostPathDevice>(
-			"\\XSTORAGE", _runtime->game_data_root() / "xstorage", false);
-		if (!xstorage_device->Initialize())
-		{
-			REXFS_ERROR("Unable to scan xstorage path");
-		}
-		else
-		{
-			if (!fs->RegisterDevice(
-				std::move(xstorage_device)))
-			{
-				REXFS_ERROR("Unable to register xstorage path");
-			}
-			else
-			{
-				fs->RegisterSymbolicLink("xstorage:",
-					"\\XSTORAGE");
-			}
+			fs->RegisterSymbolicLink("cache:", "\\CACHE");
 		}
 	}
-	break;
-	default:
-		break;
+
+	auto xstorage_device = std::make_unique<rex::filesystem::HostPathDevice>(
+		"\\XSTORAGE", _runtime->game_data_root() / "xstorage", false);
+	if (!xstorage_device->Initialize())
+	{
+		REXFS_ERROR("Unable to scan xstorage path");
+	}
+	else
+	{
+		if (!fs->RegisterDevice(
+			std::move(xstorage_device)))
+		{
+			REXFS_ERROR("Unable to register xstorage path");
+		}
+		else
+		{
+			fs->RegisterSymbolicLink("xstorage:",
+				"\\XSTORAGE");
+		}
 	}
 }
