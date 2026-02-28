@@ -171,4 +171,103 @@ void midasm_hook__c_main_menu_screen_widget_post_initialize(PPCRegister& r11, PP
 	}
 }
 
+void midasm_hook__c_havok_component_build_physics_model_component(PPCRegister& r11)
+{
+	switch (r11.u32)
+	{
+	case 0:
+		r11.s64 = 2;
+		break;
+	case 1:
+		r11.s64 = 3;
+		break;
+	case 2:
+		r11.s64 = 4;
+		break;
+	case 3:
+		r11.s64 = 5;
+		break;
+	case 4:
+		r11.s64 = 6;
+		break;
+	case 5:
+		r11.s64 = 7;
+		break;
+	default:
+		break;
+	}
+}
+
+void midasm_hook__parse_controller_button_string(PPCRegister& r6, PPCRegister& r10, PPCRegister& r31)
+{
+	switch (r10.u32)
+	{
+	case 0:
+		r6.u64 = r31.u64;
+		break;
+	case 1:
+		r6.u64 = 1;
+		break;
+	case 2:
+	case 25:
+	case 26:
+		r6.u64 = 3;
+		break;
+	case 3:
+		r6.u64 = 2;
+		break;
+	case 4:
+		r6.u64 = 5;
+		break;
+	case 5:
+		r6.u64 = 6;
+		break;
+	case 6:
+		r6.u64 = 7;
+		break;
+	case 7:
+		r6.u64 = 8;
+		break;
+	case 8:
+		r6.u64 = 11;
+		break;
+	case 9:
+		r6.u64 = 12;
+		break;
+	case 10:
+		r6.u64 = 13;
+		break;
+	case 11:
+		r6.u64 = 14;
+		break;
+	case 12:
+		r6.u64 = 15;
+		break;
+	case 13:
+		r6.u64 = 16;
+		break;
+	case 14:
+		r6.u64 = 18;
+		break;
+	case 15:
+		r6.u64 = 19;
+		break;
+	case 24:
+		r6.u64 = -1;
+		break;
+	case 27:
+		r6.u64 = 4;
+		break;
+	default:
+		break;
+	}
+}
+
 #pragma endregion
+
+/*
+loc_823A16FC:
+loc_823A1624:
+	goto loc_823A16BC;
+*/
+
