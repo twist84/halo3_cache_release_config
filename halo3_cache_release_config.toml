@@ -19,27 +19,54 @@ out_directory_path = "generated"
 setjmp_address = 0x82617CD0
 longjmp_address = 0x82617A90
 
-#[[switch_tables]]
-#address = 0x823A3CC0    # Address of the bctr instruction
-#register = 0           # GPR used as the jump index
-#labels = [0x823A3D34, 0x823A3D3C, 0x823A3D84, 0x823A3D84, 0x823A3D84, 0x823A3D84, 0x823A3D44, 0x823A3D58, 0x823A3D4C, 0x823A3D54, 0x823A3D04, 0x823A3D0C, 0x823A3D14, 0x823A3D1C, 0x823A3D24, 0x823A3D2C]  # Branch target addresses
 #
-#[[switch_tables]]
-#address = 0x823BB3F0    # Address of the bctr instruction
-#register = 0           # GPR used as the jump index
-#labels = [0x823BB4C4, 0x823BB4C4, 0x823BB3BC, 0x823BB39C, 0x823BB41C, 0x823BB4C4, 0x823BB424, 0x823BB4C4]  # Branch target addresses
+
+[[switch_tables]]
+address = 0x823A3CC0
+register = 10
+labels = [0x823A3D34]
+#labels = [0x823A3D34, 0x823A3D3C, 0x823A3D84, 0x823A3D84, 0x823A3D84, 0x823A3D84, 0x823A3D44, 0x823A3D58, 0x823A3D4C, 0x823A3D54, 0x823A3D04, 0x823A3D0C, 0x823A3D14, 0x823A3D1C, 0x823A3D24, 0x823A3D2C]
+
+[[midasm_hook]]
+address = 0x823A3CAC
+name = "midasm_hook__event_manager_button_pressed"
+registers = ["r10", "r11"]
+after_instruction = false
+jump_address = 0x823A3D58
+
 #
+
+[[midasm_hook]]
+address = 0x823B6DEC
+name = "midasm_hook__c_main_menu_screen_widget_post_initialize"
+registers = ["r11", "r28"]
+after_instruction = true
+jump_address = 0x823B6E4C
+
+#
+
+[[switch_tables]]
+address = 0x823A1518
+register = 6
+labels = [0x823A1580, 0x823A15B8, 0x823A153C, 0x823A15E4, 0x823A15F8, 0x823A16AC, 0x823A16FC, 0x823A1624]
+
+#
+
 #[[switch_tables]]
 #address = 0x8240964C    # Address of the bctr instruction
 #register = 0           # GPR used as the jump index
 #labels = [0x82409668, 0x82409670, 0x82409670, 0x82409670, 0x8240974C, 0x82409668]  # Branch target addresses
-#
+
 #[[switch_tables]]
 #address = 0x821E7818    # Address of the bctr instruction
 #register = 0           # GPR used as the jump index
 #labels = [0x821E7834, 0x821E783C, 0x821E7844, 0x821E784C, 0x821E7854, 0x821E785C]  # Branch target addresses
 
 [functions]
+0x82175C68 = {}
+0x82175C9C = {}
+0x82175CA8 = {}
+
 0x820A0000 = { name = "rex_shell_initialize", size = 0x128 }
 0x820A0128 = { name = "rex_shell_build_string_is_compatible", size = 0x68 }
 0x820A0190 = { name = "rex_main", size = 0x190 }

@@ -135,7 +135,6 @@ void Halo3CacheReleaseApp::SetupCacheAndXStorage(InitializationStage state)
 					"\\XSTORAGE");
 			}
 		}
-
 	}
 	break;
 	default:
