@@ -42,6 +42,7 @@ endif()
 
 target_include_directories(halo3_cache_release PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/generated
 )
 
