@@ -4,6 +4,7 @@
 #include "generated/halo3_cache_release_init.h"
 
 #include "interface/gui_string_ids.h"
+#include "main/main.h"
 #include "render/screen_postprocess.h"
 #include "tag_files/string_id_globals.h"
 
@@ -11,6 +12,9 @@
 #include <rex/ppc/function.h>
 
 #pragma endregion
+
+#define REFERENCE_DECLARE(address, type, name) \
+	type& name = *rex::Runtime::instance()->memory()->TranslateVirtual<type*>(address);
 
 #pragma region xbox_stubs
 
@@ -52,8 +56,11 @@ PPC_STUB_RETURN(rex_chud_text_widget_compute_geometry, false)
 
 void post_setup_callback()
 {
-	c_screen_postprocess::s_settings& x_settings_internal = *rex::Runtime::instance()->memory()->TranslateVirtual<c_screen_postprocess::s_settings*>(0x826C7920);
+	REFERENCE_DECLARE(0x826C7920, c_screen_postprocess::s_settings, x_settings_internal);
 	x_settings_internal.m_postprocess = false;
+
+	REFERENCE_DECLARE(0x82881954, bool, disable_main_loop_throttle);
+	disable_main_loop_throttle = true;
 }
 
 #pragma endregion
@@ -149,43 +156,64 @@ enum e_controller_component
 
 void midasm_hook__event_manager_button_pressed(PPCRegister& r10, PPCRegister& r11)
 {
+	REFERENCE_DECLARE(0x828D7AC8, _main_globals, main_globals);
+	REFERENCE_DECLARE(0x828D7B30, s_main_game_globals, main_game_globals);
+
 	switch (r10.u32)
 	{
 	case _gamepad_analog_button_left_trigger:
 		r11.s64 = _controller_component_button_left_trigger;
 		break;
+
 	case _gamepad_analog_button_right_trigger:
 		r11.s64 = _controller_component_button_right_trigger;
 		break;
+
 	case _gamepad_binary_button_start:
 		r11.s64 = _controller_component_button_start;
 		break;
+
 	case _gamepad_binary_button_back:
 		r11.s64 = _controller_component_button_back;
 		break;
+
 	case _gamepad_binary_button_left_thumb:
 		r11.s64 = _controller_component_button_left_thumb;
+
+		// $TEST
+		main_globals.reset_map = true;
+		main_globals.reset_map_random_seed = true;
 		break;
+
 	case _gamepad_binary_button_right_thumb:
 		r11.s64 = _controller_component_button_right_thumb;
 		break;
+
 	case _gamepad_binary_button_a:
 		r11.s64 = _controller_component_button_a;
 		break;
+
 	case _gamepad_binary_button_b:
 		r11.s64 = _controller_component_button_b;
 		break;
+
 	case _gamepad_binary_button_x:
 		r11.s64 = _controller_component_button_x;
 		break;
+
 	case _gamepad_binary_button_y:
 		r11.s64 = _controller_component_button_y;
 		break;
+
 	case _gamepad_binary_button_left_bumper:
 		r11.s64 = _controller_component_button_left_shoulder;
 		break;
+
 	case _gamepad_binary_button_right_bumper:
 		r11.s64 = _controller_component_button_right_shoulder;
+		break;
+
+	default:
 		break;
 	}
 }
@@ -197,21 +225,27 @@ void midasm_hook__c_havok_component_build_physics_model_component(PPCRegister& r
 	case 0:
 		r11.s64 = 2;
 		break;
+
 	case 1:
 		r11.s64 = 3;
 		break;
+
 	case 2:
 		r11.s64 = 4;
 		break;
+
 	case 3:
 		r11.s64 = 5;
 		break;
+
 	case 4:
 		r11.s64 = 6;
 		break;
+
 	case 5:
 		r11.s64 = 7;
 		break;
+
 	default:
 		break;
 	}
@@ -224,59 +258,77 @@ void midasm_hook__parse_controller_button_string(PPCRegister& r6, PPCRegister& r
 	case 0:
 		r6.u64 = r31.u64;
 		break;
+
 	case 1:
 		r6.u64 = 1;
 		break;
+
 	case 2:
 	case 25:
 	case 26:
 		r6.u64 = 3;
 		break;
+
 	case 3:
 		r6.u64 = 2;
 		break;
+
 	case 4:
 		r6.u64 = 5;
 		break;
+
 	case 5:
 		r6.u64 = 6;
 		break;
+
 	case 6:
 		r6.u64 = 7;
 		break;
+
 	case 7:
 		r6.u64 = 8;
 		break;
+
 	case 8:
 		r6.u64 = 11;
 		break;
+
 	case 9:
 		r6.u64 = 12;
 		break;
+
 	case 10:
 		r6.u64 = 13;
 		break;
+
 	case 11:
 		r6.u64 = 14;
 		break;
+
 	case 12:
 		r6.u64 = 15;
 		break;
+
 	case 13:
 		r6.u64 = 16;
 		break;
+
 	case 14:
 		r6.u64 = 18;
 		break;
+
 	case 15:
 		r6.u64 = 19;
 		break;
+
 	case 24:
 		r6.u64 = -1;
 		break;
+
 	case 27:
 		r6.u64 = 4;
 		break;
+
 	default:
 		break;
 	}

@@ -24,8 +24,8 @@ endif()
 
 # Sources
 set(HALO3_CACHE_RELEASE_SOURCES
-    src/main.cpp
-    src/stubs.cpp
+    source/rex_main.cpp
+    source/rex_stubs.cpp
 )
 
 # Include generated code if codegen has been run
@@ -42,7 +42,7 @@ endif()
 
 target_include_directories(halo3_cache_release PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/halo3/source
     ${CMAKE_CURRENT_SOURCE_DIR}/generated
 )
 
