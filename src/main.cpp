@@ -11,6 +11,7 @@
 
 #include <rex/filesystem/devices/host_path_device.h>
 #include <rex/filesystem/vfs.h>
+#include <rex/graphics/flags.h>
 
 class Halo3CacheReleaseApp : public rex::ReXApp
 {
@@ -26,12 +27,18 @@ public:
 	}
 
 protected:
+	virtual void OnPreSetup(rex::RuntimeConfig& config) override;
 	virtual void OnLoadXexImage(std::string& xex_image) override;
 	virtual void OnPostSetup() override;
 	virtual void OnConfigurePaths(rex::PathConfig& paths) override;
 };
 
 REX_DEFINE_APP(halo3_cache_release, Halo3CacheReleaseApp::Create)
+
+void Halo3CacheReleaseApp::OnPreSetup(rex::RuntimeConfig& config)
+{
+	REXCVAR_SET(gpu_allow_invalid_fetch_constants, true);
+}
 
 void Halo3CacheReleaseApp::OnLoadXexImage(std::string& xex_image)
 {
