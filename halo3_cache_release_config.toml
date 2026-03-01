@@ -22,6 +22,22 @@ longjmp_address = 0x82617A90
 #
 
 [[switch_tables]]
+address = 0x823A1640
+register = 3
+labels = [
+    0x823A1580,
+    0x823A15B8,
+    0x823A153C,
+    0x823A15E4,
+    0x823A15F8,
+    0x823A16AC,
+    0x823A16FC,
+    0x823A1624,
+    ]
+
+#
+
+[[switch_tables]]
 address = 0x823A3CC0
 register = 10
 labels = [0x823A3D34]
@@ -50,15 +66,6 @@ name = "midasm_hook__event_manager_button_pressed"
 registers = ["r10", "r11"]
 after_instruction = false
 jump_address = 0x823A3D58
-
-#
-
-[[midasm_hook]]
-address = 0x823B6DEC
-name = "midasm_hook__c_main_menu_screen_widget_post_initialize"
-registers = ["r11", "r28"]
-after_instruction = true
-jump_address = 0x823B6E4C
 
 #
 
@@ -127,9 +134,9 @@ labels = [0x821E7834]
 #    ]
 
 [functions]
-0x82175C68 = {}
-0x82175C9C = {}
-0x82175CA8 = {}
+0x82175C68 = { name = "loc_82175C68" }
+0x82175C9C = { name = "loc_82175C9C" }
+0x82175CA8 = { name = "loc_82175CA8" }
 
 0x820A0000 = { name = "rex_shell_initialize", size = 0x128 }
 0x820A0128 = { name = "rex_shell_build_string_is_compatible", size = 0x68 }

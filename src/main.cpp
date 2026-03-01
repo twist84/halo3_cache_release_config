@@ -87,6 +87,10 @@ void Halo3CacheReleaseApp::OnPostSetup()
 				"\\XSTORAGE");
 		}
 	}
+
+	// disable distortion
+	bool* test = rex::Runtime::instance()->memory()->TranslateVirtual<bool*>(0x826C7920);
+	*test = false;
 }
 
 void Halo3CacheReleaseApp::OnConfigurePaths(rex::PathConfig& paths)

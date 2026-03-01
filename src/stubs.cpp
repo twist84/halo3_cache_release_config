@@ -41,7 +41,6 @@ PPC_STUB(roundevenf);
 
 #pragma region game_stubs
 
-PPC_STUB(rex_hs_runtime_update); // bad switch in `c_havok_component::build_physics_model_component`
 PPC_STUB(rex_saved_film_directory_delete_contents)
 PPC_STUB(rex_autosave_queue_save_current_game_variant_to_queue)
 PPC_STUB_RETURN(rex_chud_text_widget_compute_geometry, false)
@@ -143,30 +142,6 @@ void midasm_hook__event_manager_button_pressed(PPCRegister& r10, PPCRegister& r1
 		break;
 	case _gamepad_binary_button_right_bumper:
 		r11.s64 = _controller_component_button_right_shoulder;
-		break;
-	}
-}
-
-void midasm_hook__c_main_menu_screen_widget_post_initialize(PPCRegister& r11, PPCRegister& r28)
-{
-	switch (r11.u32)
-	{
-	case 0:
-		r28.u32 = STRING_ID(gui, campaign);
-		break;
-	case 1:
-		r28.u32 = STRING_ID(gui, matchmaking);
-		break;
-	case 2:
-		r28.u32 = STRING_ID(global, multiplayer);
-		break;
-	case 3:
-		r28.u32 = STRING_ID(gui, mapeditor);
-		break;
-	case 4:
-		r28.u32 = STRING_ID(gui, theater);
-		break;
-	default:
 		break;
 	}
 }
