@@ -4,6 +4,7 @@
 #include "generated/halo3_cache_release_init.h"
 
 #include "interface/gui_string_ids.h"
+#include "render/screen_postprocess.h"
 #include "tag_files/string_id_globals.h"
 
 #include <rex/rex_app.h>
@@ -44,6 +45,16 @@ PPC_STUB(roundevenf);
 PPC_STUB(rex_saved_film_directory_delete_contents)
 PPC_STUB(rex_autosave_queue_save_current_game_variant_to_queue)
 PPC_STUB_RETURN(rex_chud_text_widget_compute_geometry, false)
+
+#pragma endregion
+
+#pragma region fixups
+
+void post_setup_callback()
+{
+	c_screen_postprocess::s_settings& x_settings_internal = *rex::Runtime::instance()->memory()->TranslateVirtual<c_screen_postprocess::s_settings*>(0x826C7920);
+	x_settings_internal.m_postprocess = false;
+}
 
 #pragma endregion
 
@@ -246,3 +257,26 @@ loc_823A1624:
 	goto loc_823A16BC;
 */
 
+/*
+		goto loc_821F2880;
+	default:
+		goto loc_821F2DBC;
+*/
+
+/*
+	case 0:
+		goto loc_82175CB4;
+	case 1:
+		return;
+	case 2:
+		loc_82175C68(ctx, base);
+		return;
+	case 3:
+		return;
+	case 4:
+		loc_82175C68(ctx, base);
+		return;
+	case 5:
+		loc_82175C9C(ctx, base);
+		return;
+*/

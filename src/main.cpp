@@ -13,6 +13,8 @@
 #include <rex/filesystem/vfs.h>
 #include <rex/graphics/flags.h>
 
+extern void post_setup_callback();
+
 class Halo3CacheReleaseApp : public rex::ReXApp
 {
 public:
@@ -47,6 +49,8 @@ void Halo3CacheReleaseApp::OnLoadXexImage(std::string& xex_image)
 
 void Halo3CacheReleaseApp::OnPostSetup()
 {
+	post_setup_callback();
+
 	rex::Runtime* _runtime = rex::ReXApp::ReXApp::runtime();
 	rex::filesystem::VirtualFileSystem* fs = _runtime->file_system();
 
@@ -87,10 +91,6 @@ void Halo3CacheReleaseApp::OnPostSetup()
 				"\\XSTORAGE");
 		}
 	}
-
-	// disable distortion
-	bool* test = rex::Runtime::instance()->memory()->TranslateVirtual<bool*>(0x826C7920);
-	*test = false;
 }
 
 void Halo3CacheReleaseApp::OnConfigurePaths(rex::PathConfig& paths)
