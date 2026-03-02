@@ -61,12 +61,12 @@ static void data_mine_insert_single_player_game_options(char const* event_name);
 
 void main_game_configure_map_memory(game_options const* options)
 {
-	REX_PPC_INVOKE(void, main_game_configure_map_memory, options);
+	REX_PPC_INVOKE(main_game_configure_map_memory, options);
 }
 
 void main_game_internal_close_caches(void)
 {
-	REX_PPC_INVOKE(void, main_game_internal_close_caches);
+	REX_PPC_INVOKE(main_game_internal_close_caches);
 
 	//tag_resources_prepare_for_new_map();
 	//cache_file_tag_resources_dispose_from_old_map();
@@ -164,5 +164,5 @@ c_wait_for_render_thread::~c_wait_for_render_thread(void)
 
 static void data_mine_insert_single_player_game_options(char const* event_name)
 {
-	REX_PPC_INVOKE(void, data_mine_insert_single_player_game_options, event_name);
+	REX_PPC_INVOKE(data_mine_insert_single_player_game_options, event_name);
 }

@@ -20,7 +20,7 @@ REX_PPC_EXTERN_IMPORT(simulation_stop);
 
 void simulation_stop()
 {
-	REX_PPC_INVOKE(void, simulation_stop);
+	REX_PPC_INVOKE(simulation_stop);
 }
 
 /* ---------- private code */

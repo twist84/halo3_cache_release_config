@@ -24,7 +24,7 @@ REX_PPC_EXTERN_IMPORT(physical_memory_stage_pop);
 
 void physical_memory_stage_pop(memory_stage stage) // 0x1801DB9D0
 {
-    REX_PPC_INVOKE(void, physical_memory_stage_pop, stage);
+    REX_PPC_INVOKE(physical_memory_stage_pop, stage);
 }
 
 /* ---------- private code */

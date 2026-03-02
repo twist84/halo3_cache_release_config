@@ -18,7 +18,7 @@ REX_PPC_EXTERN_IMPORT(game_engine_game_ending);
 
 void game_engine_game_ending(void)
 {
-	REX_PPC_INVOKE(void, game_engine_game_ending);
+	REX_PPC_INVOKE(game_engine_game_ending);
 }
 
 /* ---------- private code */

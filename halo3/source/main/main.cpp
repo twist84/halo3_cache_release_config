@@ -58,12 +58,12 @@ REX_PPC_EXTERN_IMPORT(unlock_resources_and_resume_render_thread);
 
 extern unlock_token _internal_halt_render_thread_and_lock_resources(char const* file, long line)
 {
-	return REX_PPC_INVOKE(unlock_token, _internal_halt_render_thread_and_lock_resources, file, line);
+	return REX_PPC_INVOKE(_internal_halt_render_thread_and_lock_resources, file, line);
 }
 
 extern void unlock_resources_and_resume_render_thread(unlock_token token)
 {
-	REX_PPC_INVOKE(void, unlock_resources_and_resume_render_thread, token);
+	REX_PPC_INVOKE(unlock_resources_and_resume_render_thread, token);
 }
 
 /* ---------- private code */
