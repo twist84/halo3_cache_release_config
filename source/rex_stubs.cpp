@@ -184,3 +184,19 @@ void midasm_hook__c_havok_component_build_physics_model_component(PPCRegister& r
 }
 
 #pragma endregion
+
+/*
+	error G211B3073: use of undeclared label 'loc_8220CAA0'
+
+	c_character_physics_component::set_mode
+
+loc_8220CAA0:
+	// addi r3,r31,8
+	ctx.r3.s64 = ctx.r31.s64 + 8;
+	// lwz r4,4(r31)
+	ctx.r4.u64 = PPC_LOAD_U32(ctx.r31.u32 + 4);
+	// bl 0x82227438
+	ctx.lr = 0x8220CAAC;
+	rex_c_character_physics_mode_sentinel_datum_dispose(ctx, base);
+loc_8220CAAC:
+*/
