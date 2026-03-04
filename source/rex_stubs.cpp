@@ -1,12 +1,7 @@
 #pragma region includes
 
-#include "cseries/cseries_macros.h"
-#include "input/input_constants.h"
-#include "interface/gui_string_ids.h"
-#include "interface/user_interface.h"
 #include "main/main.h"
 #include "render/screen_postprocess.h"
-#include "tag_files/string_id_globals.h"
 
 #include "rex_macros.h"
 
@@ -23,10 +18,7 @@ PPC_STUB(rex_autosave_queue_save_current_game_variant_to_queue)
 
 void post_setup_callback(void)
 {
-	REX_DATA_REFERENCE(0x826C7920, c_screen_postprocess::s_settings, x_settings_internal);
-	x_settings_internal.m_postprocess = false;
-
-	REX_DATA_REFERENCE(0x82881954, bool, disable_main_loop_throttle);
+	c_screen_postprocess::x_settings_internal.m_postprocess = false;
 	disable_main_loop_throttle = true;
 }
 
@@ -62,8 +54,6 @@ ppc_u32_result_t XUserGetName(ppc_u32_t user_index, ppc_pchar_t buffer,
 	return result;
 }
 PPC_HOOK(rex_XUserGetName, XUserGetName);
-
-PPC_HOOK(rex_main_game_unload_and_prepare_for_next_game, main_game_unload_and_prepare_for_next_game);
 
 #pragma endregion
 

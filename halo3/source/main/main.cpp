@@ -8,7 +8,6 @@
 
 /* ---------- definitions */
 
-/*
 struct _main_globals
 {
 	bool startup_sequence_performed;
@@ -32,13 +31,12 @@ struct _main_globals
 	bool byte_828D7B19;
 	bool byte_828D7B1A;
 	bool cheat_drop_tag;
-	long switch_zone_set_index;
-	long dword_828D7B20;
-	long deactivating_designer_zone_mask;
-	long cheat_drop_tag_index;
+	rex::be<long> switch_zone_set_index;
+	rex::be<long> dword_828D7B20;
+	rex::be<long> deactivating_designer_zone_mask;
+	rex::be<long> cheat_drop_tag_index;
 };
 static_assert(sizeof(_main_globals) == 0x64);
-*/
 
 /* ---------- prototypes */
 
@@ -47,12 +45,11 @@ REX_PPC_EXTERN_IMPORT(unlock_resources_and_resume_render_thread);
 
 /* ---------- globals */
 
+REX_DATA_REFERENCE2(0x82881954, bool, disable_main_loop_throttle);
+
 /* ---------- private variables */
 
-//static
-//{
-//	//extern _main_globals main_globals;
-//}
+static REX_DATA_REFERENCE2(0x828D7AC8, _main_globals, main_globals);
 
 /* ---------- public code */
 

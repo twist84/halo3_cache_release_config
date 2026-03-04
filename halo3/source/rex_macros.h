@@ -23,6 +23,9 @@
 #define REX_DATA_REFERENCE(address, type, name) \
 	type& name = *rex::Runtime::instance()->memory()->TranslateVirtual<type*>(address)
 
+#define REX_DATA_REFERENCE2(address, type, name) \
+	type& name = *reinterpret_cast<type*>(0x100000000 + address)
+
 /* ---------- definitions */
 
 template <typename t_type>

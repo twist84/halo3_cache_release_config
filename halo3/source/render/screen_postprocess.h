@@ -4,6 +4,8 @@
 
 /* ---------- headers */
 
+#include "rex_macros.h"
+
 /* ---------- constants */
 
 /* ---------- definitions */
@@ -31,6 +33,10 @@ public:
         rex::be<long> m_debug_mode; // 0x38
     };
     static_assert(sizeof(s_settings) == 0x3C);
+
+public:
+    static s_settings& x_settings_internal; // 826C7920
+    static s_settings& x_editable_settings; // 828821F8
 };
 static_assert(sizeof(c_screen_postprocess) == 1);
 
