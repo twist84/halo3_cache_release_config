@@ -2,6 +2,7 @@
 
 #include "main/main.h"
 
+#include "cseries/constants.h"
 #include "cseries/cseries_string.h"
 #include "cache/physical_memory_map.h"
 #include "game/game.h"
@@ -199,7 +200,7 @@ void main_game_unload_and_prepare_for_next_game(game_options const* options)
 		data_mine_insert_single_player_game_options("game finish");
 		game_engine_game_ending();
 		simulation_stop();
-		scenario_switch_zone_set(-1);
+		scenario_switch_zone_set(NONE);
 		game_dispose_from_old_map();
 	}
 

@@ -60,13 +60,22 @@ REX_PPC_HOOK(XUserGetName);
 /*
 	error G211B3073: use of undeclared label 'loc_8220CAA0'
 
-	c_character_physics_component::set_mode
+	$IMPLEMENT c_character_physics_component::set_mode
+	switch (old_mode)
+	{
+		case _mode_posture:
+		case _mode_climbing:
+			get_mode_sentinel()->dispose(m_object_index);
+			break;
+	}
 
 loc_8220CAA0:
-	// addi r3,r31,8
+	// addi r3,r31,8 # this
 	ctx.r3.s64 = ctx.r31.s64 + 8;
-	// lwz r4,4(r31)
+
+	// lwz r4,4(r31) # m_object_index
 	ctx.r4.u64 = PPC_LOAD_U32(ctx.r31.u32 + 4);
+
 	// bl 0x82227438
 	ctx.lr = 0x8220CAAC;
 	rex_c_character_physics_mode_sentinel_datum_dispose(ctx, base);
