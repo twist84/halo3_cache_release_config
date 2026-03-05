@@ -4,6 +4,8 @@
 
 /* ---------- headers */
 
+#include "cseries/platform.h"
+
 #ifdef _DEBUG
 #include <limits>
 #include <type_traits>

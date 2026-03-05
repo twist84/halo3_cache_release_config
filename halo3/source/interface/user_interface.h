@@ -4,7 +4,7 @@
 
 /* ---------- headers */
 
-#include "cseries/platform.h"
+#include "cseries/cseries_macros.h"
 
 /* ---------- constants */
 
