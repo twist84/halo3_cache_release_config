@@ -68,4 +68,36 @@ ppc_u32_result_t XUserGetName(ppc_u32_t user_index, ppc_pchar_t buffer,
 }
 REX_PPC_HOOK(XUserGetName);
 
+// go go gadget online
+
+bool transport_network_available()
+{
+	return true;
+}
+REX_PPC_HOOK(transport_network_available);
+
+#include <WinSock.h>
+
+// it isn't as easy as this but it should be
+
+REX_PPC_HOOK(WSAStartup);
+REX_PPC_HOOK(WSACleanup);
+REX_PPC_HOOK(socket);
+REX_PPC_HOOK(closesocket);
+REX_PPC_HOOK(shutdown);
+REX_PPC_HOOK(ioctlsocket);
+REX_PPC_HOOK(setsockopt);
+REX_PPC_HOOK(bind);
+REX_PPC_HOOK(connect);
+REX_PPC_HOOK(listen);
+REX_PPC_HOOK(accept);
+REX_PPC_HOOK(select);
+REX_PPC_HOOK(recv);
+REX_PPC_HOOK(recvfrom);
+REX_PPC_HOOK(send);
+REX_PPC_HOOK(sendto);
+REX_PPC_HOOK(inet_addr);
+REX_PPC_HOOK(WSAGetLastError);
+REX_PPC_HOOK(__WSAFDIsSet);
+
 #pragma endregion
