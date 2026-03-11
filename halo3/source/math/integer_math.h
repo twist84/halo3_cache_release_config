@@ -66,6 +66,17 @@ static_assert(sizeof(short_bounds2d) == 0x4);
 
 union point2d
 {
+	short n[2];
+	struct
+	{
+		short x;
+		short y;
+	};
+};
+static_assert(sizeof(point2d) == 0x4);
+
+union point2d_be
+{
 	rex::be<short> n[2];
 	struct
 	{

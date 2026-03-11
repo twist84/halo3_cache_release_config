@@ -4,13 +4,16 @@
 
 /* ---------- headers */
 
+#include "rex_macros.h"
+
 /* ---------- constants */
 
 /* ---------- definitions */
 
 /* ---------- prototypes */
 
-extern inline void update_button(unsigned char * frames, unsigned short * msec, bool down, long elapsed_msec);
+extern inline void update_button(unsigned char* frames, unsigned short* msec, bool down, long elapsed_msec);
+extern inline void update_button(unsigned char* frames, rex::be<unsigned short>* msec, bool down, long elapsed_msec);
 
 /* ---------- globals */
 

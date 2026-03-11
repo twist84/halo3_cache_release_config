@@ -6,6 +6,7 @@
 
 #include "cseries/constants.h"
 #include "cseries/cseries_windows.h"
+#include "game/game.h"
 #include "input/input.h"
 #include "input/input_agnostic.h"
 #include "input/input_xinput.h"
@@ -36,17 +37,17 @@ struct input_globals_xenon
 	bool rumble_suppressed_flag; // 0x2
 	rex::be<unsigned long> last_milliseconds; // 0x4
 
-	unsigned short __flags; // 0x8
+	rex::be<unsigned short> __flags; // 0x8
 
 	char __dataA[8]; // 0xA
 
 	bool valid_gamepads[4]; // 0x12
-	gamepad_state gamepad_states[4]; // 0x16
+	gamepad_state_be gamepad_states[4]; // 0x16
 
 	char __data106[0x12]; // 106
 
-	gamepad_state gamepad_suppressed; // 0x118
-	rumble_state rumble_states[4]; // 0x154
+	gamepad_state_be gamepad_suppressed; // 0x118
+	rumble_state_be rumble_states[4]; // 0x154
 
 	char __data164[4]; // 0x164
 };
@@ -60,6 +61,7 @@ static void input_update_gamepads_rumble();
 static void update_threshold(unsigned char* threshold, bool down, unsigned char current_value);
 static void update_trigger(unsigned char input, unsigned char* output);
 static void update_thumbstick(short input_x, short input_y, point2d* output);
+static void update_thumbstick(short input_x, short input_y, point2d_be* output);
 
 /* ---------- globals */
 
@@ -106,11 +108,17 @@ void update_button(unsigned char* frames, unsigned short* msec, bool down, long 
 	*msec = down ? MIN(*msec + static_cast<unsigned long>(elapsed_msec), k_unsigned_short_max) : 0;
 }
 
+void update_button(unsigned char* frames, rex::be<unsigned short>* msec, bool down, long elapsed_msec)
+{
+	*frames = down ? MIN(*frames + 1, k_unsigned_char_max) : 0;
+	*msec = down ? MIN(*msec + static_cast<unsigned long>(elapsed_msec), k_unsigned_short_max) : 0;
+}
+
 bool input_initialize(void)
 {
 	memset(&input_globals, 0, sizeof(input_globals));
 	input_globals.initialized = true;
-	input_globals.__flags |= FLAG(0);
+	input_globals.__flags = input_globals.__flags | FLAG(0);
 	input_update();
 
 	return input_globals.initialized;
@@ -141,7 +149,7 @@ void input_flush(void)
 	memset(input_globals.gamepad_states, 0, sizeof(input_globals.gamepad_states));
 }
 
-void input_suppress(void) 
+void input_suppress(void)
 {
 	input_globals.suppressed_flag = true;
 }
@@ -158,11 +166,11 @@ bool input_has_gamepad(short gamepad_index)
 	return input_globals.valid_gamepads[gamepad_index];
 }
 
-gamepad_state const* input_get_gamepad_state(short gamepad_index)
+gamepad_state_be const* input_get_gamepad_state(short gamepad_index)
 {
 	assert(gamepad_index >= 0 && gamepad_index < k_number_of_controllers);
 
-	gamepad_state const* result;
+	gamepad_state_be const* result;
 	if (input_has_gamepad(gamepad_index))
 	{
 		if (input_globals.suppressed_flag)
@@ -198,7 +206,7 @@ void input_set_gamepad_rumbler_state(short gamepad_index, unsigned short left_sp
 	assert(gamepad_index >= 0 && gamepad_index < k_number_of_controllers);
 
 	e_controller_index controller_index = static_cast<e_controller_index>(gamepad_index);
-	rumble_state* rumble_state = &input_globals.rumble_states[controller_index];
+	rumble_state_be* rumble_state = &input_globals.rumble_states[controller_index];
 	if (user_interface_controller_get_rumble_enabled(controller_index))
 	{
 		rumble_state->left_speed = left_speed;
@@ -247,13 +255,11 @@ bool input_update_gamepad(unsigned long gamepad_index, unsigned long elapsed_mse
 		{
 			bool binary_down = TEST_MASK(xinput_state.Gamepad.wButtons, button_to_xinput_button_mask[button_index]);
 
-			unsigned short button_msec = in_out_gamepad_state->button_msec[button_index];
 			update_button(
 				&in_out_gamepad_state->button_frames[button_index],
-				&button_msec,
+				&in_out_gamepad_state->button_msec[button_index],
 				binary_down,
 				static_cast<long>(elapsed_msec));
-			in_out_gamepad_state->button_msec[button_index] = button_msec;
 		}
 
 		update_thumbstick(xinput_state.Gamepad.sThumbLX, xinput_state.Gamepad.sThumbLY, &in_out_gamepad_state->sticks[_gamepad_stick_left]);
@@ -266,13 +272,62 @@ bool input_update_gamepad(unsigned long gamepad_index, unsigned long elapsed_mse
 		{
 			bool binary_down = in_out_gamepad_state->analog_buttons[button_index] > in_out_gamepad_state->analog_button_thresholds[button_index];
 
-			unsigned short button_msec = in_out_gamepad_state->button_msec[button_index];
 			update_button(
 				&in_out_gamepad_state->button_frames[button_index],
-				&button_msec,
+				&in_out_gamepad_state->button_msec[button_index],
 				binary_down,
 				static_cast<long>(elapsed_msec));
-			in_out_gamepad_state->button_msec[button_index] = button_msec;
+
+			update_threshold(
+				&in_out_gamepad_state->analog_button_thresholds[button_index],
+				binary_down,
+				in_out_gamepad_state->analog_buttons[button_index]);
+		}
+
+		result = true;
+	}
+
+	return result;
+}
+
+bool input_update_gamepad(unsigned long gamepad_index, unsigned long elapsed_msec, gamepad_state_be* in_out_gamepad_state, debug_gamepad_data_be* out_debug_gamepad_data)
+{
+	(void)(out_debug_gamepad_data);
+	assert(in_out_gamepad_state != nullptr);
+
+	e_controller_index controller_index = static_cast<e_controller_index>(gamepad_index);
+	bool result = false;
+
+	DWORD xinput_user_index = static_cast<DWORD>(controller_index);
+	XINPUT_STATE xinput_state;
+	if (XInputGetState(xinput_user_index, &xinput_state) == ERROR_SUCCESS)
+	{
+		for (long button_index = FIRST_GAMEPAD_BINARY_BUTTON; button_index < NUMBER_OF_GAMEPAD_BUTTONS; button_index++)
+		{
+			bool binary_down = TEST_MASK(xinput_state.Gamepad.wButtons, button_to_xinput_button_mask[button_index]);
+
+			update_button(
+				&in_out_gamepad_state->button_frames[button_index],
+				&in_out_gamepad_state->button_msec[button_index],
+				binary_down,
+				static_cast<long>(elapsed_msec));
+		}
+
+		update_thumbstick(xinput_state.Gamepad.sThumbLX, xinput_state.Gamepad.sThumbLY, &in_out_gamepad_state->sticks[_gamepad_stick_left]);
+		update_thumbstick(xinput_state.Gamepad.sThumbRX, xinput_state.Gamepad.sThumbRY, &in_out_gamepad_state->sticks[_gamepad_stick_right]);
+
+		update_trigger(xinput_state.Gamepad.bLeftTrigger, &in_out_gamepad_state->analog_buttons[_gamepad_analog_button_left_trigger]);
+		update_trigger(xinput_state.Gamepad.bRightTrigger, &in_out_gamepad_state->analog_buttons[_gamepad_analog_button_right_trigger]);
+
+		for (long button_index = 0; button_index < NUMBER_OF_GAMEPAD_ANALOG_BUTTONS; button_index++)
+		{
+			bool binary_down = in_out_gamepad_state->analog_buttons[button_index] > in_out_gamepad_state->analog_button_thresholds[button_index];
+
+			update_button(
+				&in_out_gamepad_state->button_frames[button_index],
+				&in_out_gamepad_state->button_msec[button_index],
+				binary_down,
+				static_cast<long>(elapsed_msec));
 
 			update_threshold(
 				&in_out_gamepad_state->analog_button_thresholds[button_index],
@@ -302,6 +357,22 @@ void input_xinput_update_rumble_state(unsigned long user_index, rumble_state con
 	}
 }
 
+void input_xinput_update_rumble_state(unsigned long user_index, rumble_state_be const* rumble_state, bool suppressed)
+{
+	assert(rumble_state != nullptr);
+
+	if (input_xinput_available())
+	{
+		XINPUT_VIBRATION vibration = {};
+		if (!suppressed)
+		{
+			vibration.wLeftMotorSpeed = rumble_state->left_speed;
+			vibration.wRightMotorSpeed = rumble_state->right_speed;
+		}
+		XInputSetState(user_index, &vibration);
+	}
+}
+
 bool input_xinput_available()
 {
 	return true;
@@ -309,7 +380,7 @@ bool input_xinput_available()
 
 /* ---------- private code */
 
-void update_trigger(unsigned char input, unsigned char* output)
+static void update_trigger(unsigned char input, unsigned char* output)
 {
 	if (input < k_trigger_dead_zone)
 	{
@@ -319,7 +390,39 @@ void update_trigger(unsigned char input, unsigned char* output)
 	*output = input;
 }
 
-void update_thumbstick(short input_x, short input_y, point2d* output)
+static void update_thumbstick(short input_x, short input_y, point2d* output)
+{
+	real scale_x = fabsf(static_cast<real>(input_x > 0 ? k_short_max : k_short_min));
+	real scale_y = fabsf(static_cast<real>(input_y > 0 ? k_short_max : k_short_min));
+
+	real_vector2d thumbstick;
+	set_real_vector2d(
+		&thumbstick,
+		static_cast<real>(input_x) / scale_x,
+		static_cast<real>(input_y) / scale_y);
+
+	real_vector2d thumbstick_l_direction = thumbstick;
+	real magnitude = normalize2d(&thumbstick_l_direction);
+	if (magnitude > 1.0f)
+	{
+		thumbstick = thumbstick_l_direction;
+	}
+	else if (magnitude < k_thumbstick_dead_zone)
+	{
+		set_real_vector2d(&thumbstick, 0.0f, 0.0f);
+	}
+	else
+	{
+		thumbstick = thumbstick_l_direction;
+		real adjusted_magnitude = (magnitude - k_thumbstick_dead_zone) / (1.0f - k_thumbstick_dead_zone);
+		scale_vector2d(&thumbstick, adjusted_magnitude, &thumbstick);
+	}
+
+	output->x = static_cast<short>(thumbstick.i * scale_x);
+	output->y = static_cast<short>(thumbstick.j * scale_y);
+}
+
+static void update_thumbstick(short input_x, short input_y, point2d_be* output)
 {
 	real scale_x = fabsf(static_cast<real>(input_x > 0 ? k_short_max : k_short_min));
 	real scale_y = fabsf(static_cast<real>(input_y > 0 ? k_short_max : k_short_min));
@@ -355,7 +458,7 @@ static void input_update_gamepads(long elapsed_msec)
 {
 	for (e_controller_index controller_index = _controller0; controller_index < k_number_of_controllers; controller_index++)
 	{
-		gamepad_state* state = &input_globals.gamepad_states[controller_index];
+		gamepad_state_be* state = &input_globals.gamepad_states[controller_index];
 		bool is_valid = input_update_gamepad(static_cast<unsigned long>(controller_index), static_cast<unsigned long>(elapsed_msec), state, nullptr);
 
 		if (is_valid)
@@ -368,8 +471,6 @@ static void input_update_gamepads(long elapsed_msec)
 		}
 	}
 }
-
-#include "game/game.h"
 
 static void input_update_gamepads_rumble()
 {
@@ -386,7 +487,7 @@ static void input_update_gamepads_rumble()
 		suppress_rumble = true;
 	}
 
-	for (short gamepad_index = 0; gamepad_index < 4; gamepad_index++)
+	for (short gamepad_index = 0; gamepad_index < NUMBEROF(input_globals.rumble_states); gamepad_index++)
 	{
 		input_xinput_update_rumble_state(gamepad_index, &input_globals.rumble_states[gamepad_index], suppress_rumble);
 	}
