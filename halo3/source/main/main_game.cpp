@@ -99,6 +99,7 @@ e_map_memory_configuration compute_desired_map_memory_configuration(const game_o
 			desired_memory_configuration = _map_memory_configuration_main_menu;
 			break;
 		default:
+			desired_memory_configuration = _map_memory_configuration_none;
 			break;
 		}
 	}
