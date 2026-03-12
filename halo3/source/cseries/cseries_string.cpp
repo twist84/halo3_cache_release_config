@@ -125,7 +125,7 @@ char* ascii_strnlwr(char* string, size_t count)
 
 unsigned int ascii_stristr(char const* look_inside, char const* look_for)
 {
-	unsigned int index_of_substring = UINT_MAX;
+	unsigned int index_of_substring = k_unsigned_int_max;
 
 	assert(look_inside && look_for);
 
