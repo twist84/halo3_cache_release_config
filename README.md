@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/twist84/halo3_cache_release_recomp)
+
 ### A recomp of `halo3_cache_release.xex` from `Halo 3 08172.07.03.08.2240.delta (March 8 2007)`
 
 My fork of [rexglue](https://github.com/twist84/rexglue-sdk/tree/on-load-xex-image) is required for the following
