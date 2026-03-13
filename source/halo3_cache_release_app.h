@@ -41,6 +41,7 @@ void Halo3CacheReleaseApp::OnPreSetup(rex::RuntimeConfig& config)
 {
 	REXCVAR_SET(gpu_allow_invalid_fetch_constants, true);
 	//REXCVAR_SET(fullscreen, true);
+	//REXCVAR_SET(vsync, false);
 	//REXCVAR_SET(resolution_scale, 2);
 }
 
@@ -97,10 +98,11 @@ void Halo3CacheReleaseApp::OnPostSetup()
 
 void Halo3CacheReleaseApp::OnConfigurePaths(rex::PathConfig& paths)
 {
-	// set to 0 for launching after builds
-#if 1
-	paths.game_data_root = ".";
-	paths.user_data_root = ".";
-	paths.update_data_root = ".";
-#endif
+	if (IsDebuggerPresent() == FALSE)
+	{
+		// for user deployments not a developer debugging
+		paths.game_data_root = ".";
+		paths.user_data_root = ".";
+		paths.update_data_root = ".";
+	}
 }
