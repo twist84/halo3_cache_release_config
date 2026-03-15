@@ -1,5 +1,7 @@
 /* ---------- headers */
 
+#define __STATIC_ARRAYS_TEMPLATES__
+
 #include "cseries/cseries_macros.h"
 #include "cache/physical_memory_map.h"
 #include "memory/static_array.h"

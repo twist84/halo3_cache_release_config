@@ -11,33 +11,10 @@ REX_DEFINE_APP(halo3_cache_release, Halo3CacheReleaseApp::Create)
 
 // BLAM!
 
-#pragma region includes
-
-#include "main/main.h"
-#include "render/screen_postprocess.h"
-
 #include "rex_macros.h"
-
-#pragma endregion
-
-#pragma region game_stubs
 
 PPC_STUB(rex_saved_film_directory_delete_contents)
 PPC_STUB(rex_autosave_queue_save_current_game_variant_to_queue)
-
-#pragma endregion
-
-#pragma region QoL
-
-void post_setup_callback(void)
-{
-	c_screen_postprocess::x_settings_internal.m_postprocess = false;
-	disable_main_loop_throttle = true;
-}
-
-#pragma endregion
-
-#pragma region ppc_hooks
 
 REXCVAR_DEFINE_STRING(username, "User", "Rex/User", "override the users name");
 
@@ -99,5 +76,3 @@ REX_PPC_HOOK(sendto);
 REX_PPC_HOOK(inet_addr);
 REX_PPC_HOOK(WSAGetLastError);
 REX_PPC_HOOK(__WSAFDIsSet);
-
-#pragma endregion

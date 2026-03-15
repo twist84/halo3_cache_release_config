@@ -30,12 +30,15 @@ protected:
 	// void OnConfigurePaths(rex::PathConfig& paths) override {}
 
 	virtual void OnPreSetup(rex::RuntimeConfig& config) override;
-	virtual void OnLoadXexImage(std::string& xex_image) override;
+	virtual void OnLoadXexImage(std::string& xex_image) override; // https://github.com/twist84/rexglue-sdk/tree/on-load-xex-image/
 	virtual void OnPostSetup() override;
 	virtual void OnConfigurePaths(rex::PathConfig& paths) override;
 };
 
-extern void post_setup_callback(void);
+// BLAM!
+
+#include "main/main.h"
+#include "render/screen_postprocess.h"
 
 void Halo3CacheReleaseApp::OnPreSetup(rex::RuntimeConfig& config)
 {
@@ -52,7 +55,10 @@ void Halo3CacheReleaseApp::OnLoadXexImage(std::string& xex_image)
 
 void Halo3CacheReleaseApp::OnPostSetup()
 {
-	post_setup_callback();
+	{
+		c_screen_postprocess::x_settings_internal.m_postprocess = false;
+		disable_main_loop_throttle = true;
+	}
 
 	rex::Runtime* _runtime = rex::ReXApp::ReXApp::runtime();
 	rex::filesystem::VirtualFileSystem* fs = _runtime->file_system();
