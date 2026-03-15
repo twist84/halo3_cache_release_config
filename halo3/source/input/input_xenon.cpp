@@ -70,17 +70,20 @@ struct s_rawinput_state
 
 /* ---------- prototypes */
 
-static void input_rawinput_process(RAWINPUT const* raw);
-static void input_rawinput_poll(void);
 static void input_update_gamepads(long elapsed_msec);
 static void input_update_gamepads_rumble(void);
-
-static bool gamepad_state_get(unsigned long gamepad_index, XINPUT_STATE* out_state);
 
 static void update_threshold(unsigned char* threshold, bool down, unsigned char current_value);
 static void update_trigger(unsigned char input, unsigned char* output);
 static void update_thumbstick(short input_x, short input_y, point2d* output);
 static void update_thumbstick(short input_x, short input_y, point2d_be* output);
+
+static bool gamepad_state_get(unsigned long gamepad_index, XINPUT_STATE* out_state);
+
+static bool input_rawinput_initialize(void);
+static void input_rawinput_poll(void);
+static LRESULT CALLBACK input_rawinput_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+static void input_rawinput_process(RAWINPUT const* raw);
 
 /* ---------- globals */
 
@@ -441,63 +444,6 @@ void update_button(unsigned char* frames, rex::be<unsigned short>* msec, bool do
 	*msec = down ? MIN(*msec + elapsed_msec, k_unsigned_short_max) : 0;
 }
 
-static LRESULT CALLBACK input_rawinput_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	if (msg == WM_INPUT)
-	{
-		UINT size = sizeof(RAWINPUT);
-		BYTE buffer[sizeof(RAWINPUT)];
-
-		if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lparam), RID_INPUT,
-				buffer, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1))
-		{
-			input_rawinput_process(reinterpret_cast<RAWINPUT const*>(buffer));
-		}
-	}
-
-	return DefWindowProcW(hwnd, msg, wparam, lparam);
-}
-
-bool input_rawinput_initialize(void)
-{
-	WNDCLASSEXW wc = {};
-	wc.cbSize        = sizeof(wc);
-	wc.lpfnWndProc   = input_rawinput_wndproc;
-	wc.hInstance     = GetModuleHandleW(nullptr);
-	wc.lpszClassName = L"input_rawinput";
-	RegisterClassExW(&wc);
-
-	rawinput_globals.window = CreateWindowExW(
-		0,
-		L"input_rawinput",
-		nullptr,
-		0, 0, 0, 0, 0,
-		HWND_MESSAGE,
-		nullptr,
-		GetModuleHandleW(nullptr),
-		nullptr);
-
-	bool result = false;
-	if (rawinput_globals.window != nullptr)
-	{
-		RAWINPUTDEVICE devices[2] = {};
-
-		devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		devices[0].usUsage     = HID_USAGE_GENERIC_MOUSE;
-		devices[0].dwFlags     = RIDEV_INPUTSINK;
-		devices[0].hwndTarget  = rawinput_globals.window;
-
-		devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		devices[1].usUsage     = HID_USAGE_GENERIC_KEYBOARD;
-		devices[1].dwFlags     = RIDEV_INPUTSINK;
-		devices[1].hwndTarget  = rawinput_globals.window;
-
-		result = RegisterRawInputDevices(devices, ARRAYSIZE(devices), sizeof(RAWINPUTDEVICE)) == TRUE;
-	}
-
-	return result;
-}
-
 bool input_initialize(void)
 {
 	memset(&input_globals, 0, sizeof(input_globals));
@@ -609,26 +555,6 @@ void input_set_gamepad_rumbler_state(short gamepad_index, unsigned short left_sp
 	}
 }
 
-void update_threshold(unsigned char* threshold, bool trigger_down, unsigned char duration_ms)
-{
-	if (trigger_down)
-	{
-		unsigned char msec_down = CLAMP_LOWER(duration_ms, 0, 32);
-		if (*threshold <= msec_down)
-		{
-			*threshold = msec_down;
-		}
-	}
-	else
-	{
-		unsigned char msec_down = CLAMP_UPPER(duration_ms, 64, 255);
-		if (*threshold >= msec_down)
-		{
-			*threshold = msec_down;
-		}
-	}
-}
-
 bool input_update_gamepad(unsigned long gamepad_index, unsigned long elapsed_msec, gamepad_state_be* in_out_gamepad_state, debug_gamepad_data_be* out_debug_gamepad_data)
 {
 	(void)(out_debug_gamepad_data);
@@ -722,75 +648,69 @@ bool input_xinput_available(void)
 
 /* ---------- private code */
 
-static void input_rawinput_process(RAWINPUT const* raw)
+static void input_update_gamepads(long elapsed_msec)
 {
-	if (raw->header.dwType == RIM_TYPEMOUSE)
+	bool pc_joystick_enabled = REXCVAR_GET(enable_pc_joystick);
+	if (pc_joystick_enabled)
 	{
-		RAWMOUSE const& m = raw->data.mouse;
-
-		if (!(m.usFlags & MOUSE_MOVE_ABSOLUTE))
-		{
-			rawinput_globals.mouse_delta[_mouse_delta_x] += m.lLastX;
-			rawinput_globals.mouse_delta[_mouse_delta_y] += m.lLastY;
-		}
-
-		if (m.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)   rawinput_globals.mouse_buttons[_mouse_button_left]   = true;
-		if (m.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)     rawinput_globals.mouse_buttons[_mouse_button_left]   = false;
-		if (m.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) rawinput_globals.mouse_buttons[_mouse_button_middle] = true;
-		if (m.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)   rawinput_globals.mouse_buttons[_mouse_button_middle] = false;
-		if (m.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)  rawinput_globals.mouse_buttons[_mouse_button_right]  = true;
-		if (m.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)    rawinput_globals.mouse_buttons[_mouse_button_right]  = false;
-		if (m.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)      rawinput_globals.mouse_buttons[_mouse_button_button4] = true;
-		if (m.usButtonFlags & RI_MOUSE_BUTTON_4_UP)        rawinput_globals.mouse_buttons[_mouse_button_button4] = false;
-		if (m.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)      rawinput_globals.mouse_buttons[_mouse_button_button5] = true;
-		if (m.usButtonFlags & RI_MOUSE_BUTTON_5_UP)        rawinput_globals.mouse_buttons[_mouse_button_button5] = false;
-
-		if (m.usButtonFlags & RI_MOUSE_WHEEL)
-		{
-			rawinput_globals.mouse_delta[_mouse_delta_wheel] += static_cast<short>(m.usButtonData);
-		}
+		input_rawinput_poll();
 	}
-	else if (raw->header.dwType == RIM_TYPEKEYBOARD)
-	{
-		RAWKEYBOARD const& kb = raw->data.keyboard;
+	input_globals.rumble_suppressed_flag = pc_joystick_enabled;
 
-		e_input_key_code key_code = k_vk_to_key_code[kb.VKey];
-		if (key_code != _key_not_a_key)
+	for (e_controller_index controller_index = first_controller(); controller_index != k_no_controller; controller_index = next_controller(controller_index))
+	{
+		gamepad_state_be* state = &input_globals.gamepad_states[controller_index];
+		bool is_valid = input_update_gamepad(static_cast<unsigned long>(controller_index), static_cast<unsigned long>(elapsed_msec), state, nullptr);
+
+		if (is_valid)
 		{
-			rawinput_globals.key_down[key_code] = !(kb.Flags & RI_KEY_BREAK);
+			input_globals.valid_gamepads[controller_index] = is_valid;
+		}
+		else
+		{
+			memset(state, 0, sizeof(*state));
 		}
 	}
 }
 
-static void input_rawinput_poll(void)
+static void input_update_gamepads_rumble(void)
 {
-	HWND foreground = GetForegroundWindow();
-	DWORD foreground_pid = 0;
-	GetWindowThreadProcessId(foreground, &foreground_pid);
-
-	ImGuiIO& io = ImGui::GetIO();
-	bool const im_has_render_windows = io.MetricsRenderWindows > 0;
-
-	bool const should_clip = foreground_pid == GetCurrentProcessId() && foreground != GetConsoleWindow();
-	if (should_clip && !im_has_render_windows)
+	bool suppress_rumble = input_globals.rumble_suppressed_flag || input_globals.suppressed_flag;
+	if (game_in_progress())
 	{
-		RECT clip = {};
-		clip.left   = (GetSystemMetrics(SM_CXSCREEN) - 100) / 2;
-		clip.top    = (GetSystemMetrics(SM_CYSCREEN) - 100) / 2;
-		clip.right  = clip.left + 100;
-		clip.bottom = clip.top  + 100;
-		ClipCursor(&clip);
+		if (game_time_get_paused())
+		{
+			suppress_rumble = true;
+		}
 	}
 	else
 	{
-		ClipCursor(nullptr);
+		suppress_rumble = true;
 	}
 
-	MSG msg;
-	while (PeekMessageW(&msg, rawinput_globals.window, 0, 0, PM_REMOVE))
+	for (short gamepad_index = 0; gamepad_index < NUMBEROF(input_globals.rumble_states); gamepad_index++)
 	{
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+		input_xinput_update_rumble_state(gamepad_index, &input_globals.rumble_states[gamepad_index], suppress_rumble);
+	}
+}
+
+static void update_threshold(unsigned char* threshold, bool trigger_down, unsigned char duration_ms)
+{
+	if (trigger_down)
+	{
+		unsigned char msec_down = CLAMP_LOWER(duration_ms, 0, 32);
+		if (*threshold <= msec_down)
+		{
+			*threshold = msec_down;
+		}
+	}
+	else
+	{
+		unsigned char msec_down = CLAMP_UPPER(duration_ms, 64, 255);
+		if (*threshold >= msec_down)
+		{
+			*threshold = msec_down;
+		}
 	}
 }
 
@@ -868,52 +788,6 @@ static void update_thumbstick(short input_x, short input_y, point2d_be* output)
 	output->y = static_cast<short>(thumbstick.j * scale_y);
 }
 
-static void input_update_gamepads(long elapsed_msec)
-{
-	bool pc_joystick_enabled = REXCVAR_GET(enable_pc_joystick);
-	if (pc_joystick_enabled)
-	{
-		input_rawinput_poll();
-	}
-	input_globals.rumble_suppressed_flag = pc_joystick_enabled;
-
-	for (e_controller_index controller_index = first_controller(); controller_index != k_no_controller; controller_index = next_controller(controller_index))
-	{
-		gamepad_state_be* state = &input_globals.gamepad_states[controller_index];
-		bool is_valid = input_update_gamepad(static_cast<unsigned long>(controller_index), static_cast<unsigned long>(elapsed_msec), state, nullptr);
-
-		if (is_valid)
-		{
-			input_globals.valid_gamepads[controller_index] = is_valid;
-		}
-		else
-		{
-			memset(state, 0, sizeof(*state));
-		}
-	}
-}
-
-static void input_update_gamepads_rumble(void)
-{
-	bool suppress_rumble = input_globals.rumble_suppressed_flag || input_globals.suppressed_flag;
-	if (game_in_progress())
-	{
-		if (game_time_get_paused())
-		{
-			suppress_rumble = true;
-		}
-	}
-	else
-	{
-		suppress_rumble = true;
-	}
-
-	for (short gamepad_index = 0; gamepad_index < NUMBEROF(input_globals.rumble_states); gamepad_index++)
-	{
-		input_xinput_update_rumble_state(gamepad_index, &input_globals.rumble_states[gamepad_index], suppress_rumble);
-	}
-}
-
 static bool gamepad_state_get(unsigned long gamepad_index, XINPUT_STATE* out_state)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -988,4 +862,139 @@ static bool gamepad_state_get(unsigned long gamepad_index, XINPUT_STATE* out_sta
 		result = false;
 	}
     return result;
+}
+
+static bool input_rawinput_initialize(void)
+{
+	WNDCLASSEXW wc = {};
+	wc.cbSize        = sizeof(wc);
+	wc.lpfnWndProc   = input_rawinput_wndproc;
+	wc.hInstance     = GetModuleHandleW(nullptr);
+	wc.lpszClassName = L"input_rawinput";
+	RegisterClassExW(&wc);
+
+	rawinput_globals.window = CreateWindowExW(
+		0,
+		L"input_rawinput",
+		nullptr,
+		0, 0, 0, 0, 0,
+		HWND_MESSAGE,
+		nullptr,
+		GetModuleHandleW(nullptr),
+		nullptr);
+
+	bool result = false;
+	if (rawinput_globals.window != nullptr)
+	{
+		RAWINPUTDEVICE devices[2] = {};
+
+		devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		devices[0].usUsage     = HID_USAGE_GENERIC_MOUSE;
+		devices[0].dwFlags     = RIDEV_INPUTSINK;
+		devices[0].hwndTarget  = rawinput_globals.window;
+
+		devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		devices[1].usUsage     = HID_USAGE_GENERIC_KEYBOARD;
+		devices[1].dwFlags     = RIDEV_INPUTSINK;
+		devices[1].hwndTarget  = rawinput_globals.window;
+
+		result = RegisterRawInputDevices(devices, ARRAYSIZE(devices), sizeof(RAWINPUTDEVICE)) == TRUE;
+	}
+
+	return result;
+}
+
+static void input_rawinput_poll(void)
+{
+	HWND foreground = GetForegroundWindow();
+	DWORD foreground_pid = 0;
+	GetWindowThreadProcessId(foreground, &foreground_pid);
+
+	ImGuiIO& io = ImGui::GetIO();
+	bool const im_has_render_windows = io.MetricsRenderWindows > 0;
+
+	bool const should_clip = foreground_pid == GetCurrentProcessId() && foreground != GetConsoleWindow();
+	if (should_clip && !im_has_render_windows)
+	{
+		RECT clip = {};
+		clip.left   = (GetSystemMetrics(SM_CXSCREEN) - 100) / 2;
+		clip.top    = (GetSystemMetrics(SM_CYSCREEN) - 100) / 2;
+		clip.right  = clip.left + 100;
+		clip.bottom = clip.top  + 100;
+		ClipCursor(&clip);
+	}
+	else
+	{
+		ClipCursor(nullptr);
+	}
+
+	MSG msg;
+	while (PeekMessageW(&msg, rawinput_globals.window, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessageW(&msg);
+	}
+}
+
+static LRESULT CALLBACK input_rawinput_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	if (msg == WM_INPUT)
+	{
+		UINT size = sizeof(RAWINPUT);
+		BYTE buffer[sizeof(RAWINPUT)];
+
+		if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lparam), RID_INPUT,
+				buffer, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1))
+		{
+			input_rawinput_process(reinterpret_cast<RAWINPUT const*>(buffer));
+		}
+	}
+
+	return DefWindowProcW(hwnd, msg, wparam, lparam);
+}
+
+static void input_rawinput_process(RAWINPUT const* raw)
+{
+	if (raw->header.dwType == RIM_TYPEMOUSE)
+	{
+		RAWMOUSE const& m = raw->data.mouse;
+
+		if (!(m.usFlags & MOUSE_MOVE_ABSOLUTE))
+		{
+			rawinput_globals.mouse_delta[_mouse_delta_x] += m.lLastX;
+			rawinput_globals.mouse_delta[_mouse_delta_y] += m.lLastY;
+		}
+
+#define RI_MOUSE_DOWN(BUTTON_MASK, BUTTON_ENUM) \
+if (m.usButtonFlags & BUTTON_MASK) rawinput_globals.mouse_buttons[BUTTON_ENUM] = true;
+#define RI_MOUSE_UP(BUTTON_MASK, BUTTON_ENUM) \
+if (m.usButtonFlags & BUTTON_MASK) rawinput_globals.mouse_buttons[BUTTON_ENUM] = false;
+		RI_MOUSE_DOWN( RI_MOUSE_LEFT_BUTTON_DOWN,   _mouse_button_left);
+		RI_MOUSE_UP(   RI_MOUSE_LEFT_BUTTON_UP,     _mouse_button_left);
+		RI_MOUSE_DOWN( RI_MOUSE_MIDDLE_BUTTON_DOWN, _mouse_button_middle);
+		RI_MOUSE_UP(   RI_MOUSE_MIDDLE_BUTTON_UP,   _mouse_button_middle);
+		RI_MOUSE_DOWN( RI_MOUSE_RIGHT_BUTTON_DOWN,  _mouse_button_right);
+		RI_MOUSE_UP(   RI_MOUSE_RIGHT_BUTTON_UP,    _mouse_button_right);
+		RI_MOUSE_DOWN( RI_MOUSE_BUTTON_4_DOWN,      _mouse_button_button4);
+		RI_MOUSE_UP(   RI_MOUSE_BUTTON_4_UP,        _mouse_button_button4);
+		RI_MOUSE_DOWN( RI_MOUSE_BUTTON_5_DOWN,      _mouse_button_button5);
+		RI_MOUSE_UP(   RI_MOUSE_BUTTON_5_UP,        _mouse_button_button5);
+#undef RI_MOUSE_UP
+#undef RI_MOUSE_DOWN
+
+		if (m.usButtonFlags & RI_MOUSE_WHEEL)
+		{
+			rawinput_globals.mouse_delta[_mouse_delta_wheel] += static_cast<short>(m.usButtonData);
+		}
+	}
+	else if (raw->header.dwType == RIM_TYPEKEYBOARD)
+	{
+		RAWKEYBOARD const& kb = raw->data.keyboard;
+
+		e_input_key_code key_code = k_vk_to_key_code[kb.VKey];
+		if (key_code != _key_not_a_key)
+		{
+			rawinput_globals.key_down[key_code] = !(kb.Flags & RI_KEY_BREAK);
+		}
+	}
 }
